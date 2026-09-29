@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChemistryMate</title>
+<style>
+:root{--a:#22d3ee;--b:#8b5cf6;--bg:#090713;--text:#fff;--muted:#aaa4b8}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,system-ui;background:var(--bg);color:var(--text);display:flex;justify-content:center;padding:20px}
+.app{width:min(1000px,100%);height:calc(100vh - 40px);display:flex;flex-direction:column;border:1px solid #ffffff16;border-radius:34px;background:linear-gradient(145deg,#171027,#0c0a15);overflow:hidden}
+header{padding:21px;text-align:center;border-bottom:1px solid #ffffff12}header .logo{font-size:30px;color:var(--a)}header h1{margin:6px 0 2px;font-size:20px}header small{color:var(--muted)}
+.chat{flex:1;overflow:auto;padding:34px}.welcome{max-width:600px;margin:75px auto;text-align:center}.orb{width:90px;height:90px;margin:0 auto 22px;border-radius:50%;display:grid;place-items:center;font-size:38px;background:radial-gradient(circle,var(--a),var(--b) 55%,transparent 70%);box-shadow:0 0 65px #22d3ee55}h2{font-size:40px;margin:0 0 12px}.welcome p{color:var(--muted);line-height:1.7}
+.msg{display:flex;margin-bottom:18px}.user{justify-content:flex-end}.bubble{max-width:82%;padding:15px 18px;border-radius:22px;background:#ffffff08;border:1px solid #ffffff12;white-space:pre-wrap;line-height:1.65}.user .bubble{background:linear-gradient(135deg,var(--a),var(--b));border:0}
+footer{padding:18px 24px;background:#07050c;border-top:1px solid #ffffff12}form{display:flex;gap:10px}textarea{flex:1;min-height:52px;max-height:140px;resize:none;border:1px solid #ffffff18;border-radius:17px;background:#ffffff08;color:#fff;padding:14px;outline:0;font:inherit}button{width:52px;border:0;border-radius:17px;background:linear-gradient(135deg,var(--a),var(--b));color:#fff;font-size:19px;cursor:pointer}
+@media(max-width:650px){body{padding:0}.app{height:100vh;border-radius:0}.chat{padding:20px 13px}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<main>
+<header>
+<div class="brand"><div class="logo">⚗</div><div><h1>ChemistryMate</h1><small>Chemistry study assistant</small></div></div>
+<div class="pill">● STUDY MODE</div>
+</header>
+<section class="chat" id="chat">
+<div class="welcome" id="welcome">
+<div class="hero">⚗</div>
+<h2>Learn Chemistry.</h2>
+<p>Ask concepts, problems, assignments, revision questions, or exam-preparation questions related to Chemistry.</p>
+</div>
+</section>
+<footer>
+<form id="chat-form">
+<textarea id="message" rows="1" placeholder="Ask a Chemistry question..." autocomplete="off"></textarea>
+<button id="send" type="submit">➤</button>
+</form>
+</footer>
+</main>
+</div>
+<script>
+const form=document.getElementById("chat-form");
+const input=document.getElementById("message");
+const chat=document.getElementById("chat");
+const send=document.getElementById("send");
+const welcome=document.getElementById("welcome");
+
+function addMessage(text,role){
+ if(welcome) welcome.remove();
+ const row=document.createElement("div");
+ row.className="msg "+role;
+ const bubble=document.createElement("div");
+ bubble.className="bubble";
+ bubble.textContent=text;
+ row.appendChild(bubble);
+ chat.appendChild(row);
+ chat.scrollTop=chat.scrollHeight;
+}
+
+function addTyping(){
+ const row=document.createElement("div");
+ row.className="msg bot";
+ row.id="typing";
+ const bubble=document.createElement("div");
+ bubble.className="bubble";
+ bubble.textContent="Thinking...";
+ row.appendChild(bubble);
+ chat.appendChild(row);
+ chat.scrollTop=chat.scrollHeight;
+}
+
+form.addEventListener("submit",async(e)=>{
+ e.preventDefault();
+ const message=input.value.trim();
+ if(!message||send.disabled)return;
+ addMessage(message,"user");
+ input.value="";
+ input.style.height="auto";
+ send.disabled=true;
+ addTyping();
+ try{
+  const r=await fetch("/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message})});
+  const data=await r.json();
+  document.getElementById("typing")?.remove();
+  addMessage(r.ok?data.reply:(data.error||"Something went wrong."),"bot");
+ }catch(err){
+  document.getElementById("typing")?.remove();
+  addMessage("Unable to connect to the chatbot right now.","bot");
+ }finally{send.disabled=false;input.focus();}
+});
+
+input.addEventListener("input",()=>{
+ input.style.height="auto";
+ input.style.height=Math.min(input.scrollHeight,140)+"px";
+});
+input.addEventListener("keydown",(e)=>{
+ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();form.requestSubmit();}
+});
+</script>
+</body>
+</html>
